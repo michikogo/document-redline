@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from "react";
+import React, { useEffect, useReducer, useRef } from "react";
 import { getDocument } from "../api/client";
 import type { Document } from "../api/client";
 import styles from "./DocumentViewer.module.css";
@@ -11,12 +11,14 @@ type State =
 type Props = {
   documentId: string;
   overrideDoc?: Document;
+  onOpenDrawer: (prefill?: string) => void;
 };
 
-const DocumentViewer = ({ documentId, overrideDoc }: Props) => {
+const DocumentViewer = ({ documentId, overrideDoc, onOpenDrawer }: Props) => {
   const [state, dispatch] = useReducer((_prev: State, next: State) => next, {
     status: "loading",
   });
+  const contentRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
     dispatch({ status: "loading" });
@@ -29,6 +31,15 @@ const DocumentViewer = ({ documentId, overrideDoc }: Props) => {
     if (overrideDoc) dispatch({ status: "ok", doc: overrideDoc });
   }, [overrideDoc]);
 
+  const handleMouseUp = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    const selected = selection.toString().trim();
+    if (!selected || !contentRef.current?.contains(selection.anchorNode))
+      return;
+    onOpenDrawer(selected);
+  };
+
   if (state.status === "error")
     return <p className={styles.error}>{state.message}</p>;
   if (state.status === "loading")
@@ -39,13 +50,27 @@ const DocumentViewer = ({ documentId, overrideDoc }: Props) => {
   return (
     <div>
       <div className={styles.header}>
-        <h1 className={styles.title}>{doc.title}</h1>
-        <span className={styles.meta}>
-          Version {doc.version} · Updated{" "}
-          {new Date(doc.updated_at).toLocaleString()}
-        </span>
+        <div className={styles.headerText}>
+          <h1 className={styles.title}>{doc.title}</h1>
+          <span className={styles.meta}>
+            Version {doc.version} · Updated{" "}
+            {new Date(doc.updated_at).toLocaleString()}
+          </span>
+        </div>
+        <button
+          className={styles.applyButton}
+          onClick={() => onOpenDrawer(undefined)}
+        >
+          Update Doc
+        </button>
       </div>
-      <pre className={styles.content}>{doc.content}</pre>
+      <pre
+        ref={contentRef}
+        className={styles.content}
+        onMouseUp={handleMouseUp}
+      >
+        {doc.content}
+      </pre>
     </div>
   );
 };
