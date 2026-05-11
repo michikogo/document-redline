@@ -1,7 +1,21 @@
 import React, { useState } from "react";
 import { applyChanges } from "../api/client";
 import type { Document } from "../api/client";
+import useDebounce from "../hooks/useDebounce";
 import styles from "../styles/ChangeForm.module.css";
+
+const countOccurrences = (content: string, target: string): number => {
+  if (!target.trim()) return 0;
+  const lower = content.toLowerCase();
+  const lowerTarget = target.toLowerCase();
+  let count = 0;
+  let idx = 0;
+  while ((idx = lower.indexOf(lowerTarget, idx)) !== -1) {
+    count++;
+    idx += lowerTarget.length;
+  }
+  return count;
+};
 
 type ChangeRow = {
   id: string;
@@ -19,11 +33,17 @@ const makeRow = (target = ""): ChangeRow => ({
 
 type Props = {
   documentId: string;
+  documentContent?: string;
   initialTarget?: string;
   onSuccess: (updated: Document) => void;
 };
 
-const ChangeForm = ({ documentId, initialTarget, onSuccess }: Props) => {
+const ChangeForm = ({
+  documentId,
+  documentContent = "",
+  initialTarget,
+  onSuccess,
+}: Props) => {
   const [rows, setRows] = useState<ChangeRow[]>([makeRow(initialTarget ?? "")]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,53 +90,15 @@ const ChangeForm = ({ documentId, initialTarget, onSuccess }: Props) => {
     <form className={styles.form} onSubmit={handleSubmit}>
       <ul className={styles.rowList}>
         {rows.map((row, i) => (
-          <li key={row.id} className={styles.changeRow}>
-            {rows.length > 1 && (
-              <div className={styles.rowHeader}>
-                <span className={styles.rowLabel}>Change {i + 1}</span>
-                <button
-                  type="button"
-                  className={styles.removeButton}
-                  onClick={() => removeRow(row.id)}
-                  aria-label="Remove change"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-            <div className={styles.field}>
-              <label className={styles.label}>Target text</label>
-              <textarea
-                className={styles.textarea}
-                value={row.target}
-                onChange={(e) => updateRow(row.id, "target", e.target.value)}
-                placeholder="Text to replace"
-              />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Occurrence</label>
-              <input
-                className={styles.input}
-                type="number"
-                min={1}
-                value={row.occurrence}
-                onChange={(e) =>
-                  updateRow(row.id, "occurrence", Number(e.target.value))
-                }
-              />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Replacement</label>
-              <textarea
-                className={styles.textarea}
-                value={row.replacement}
-                onChange={(e) =>
-                  updateRow(row.id, "replacement", e.target.value)
-                }
-                placeholder="Replace with"
-              />
-            </div>
-          </li>
+          <ChangeRowItem
+            key={row.id}
+            row={row}
+            index={i}
+            showRemove={rows.length > 1}
+            documentContent={documentContent}
+            onUpdate={updateRow}
+            onRemove={removeRow}
+          />
         ))}
       </ul>
       <button type="button" className={styles.addButton} onClick={addRow}>
@@ -130,9 +112,84 @@ const ChangeForm = ({ documentId, initialTarget, onSuccess }: Props) => {
       >
         {loading
           ? "Applying..."
-          : `Apply${rows.length > 1 ? ` (${rows.length})` : ""}`}
+          : rows.length > 1
+            ? "Apply (" + rows.length + ")"
+            : "Apply"}
       </button>
     </form>
+  );
+};
+
+type RowProps = {
+  row: ChangeRow;
+  index: number;
+  showRemove: boolean;
+  documentContent: string;
+  onUpdate: (id: string, field: keyof Omit<ChangeRow, "id">, value: string | number) => void;
+  onRemove: (id: string) => void;
+};
+
+const ChangeRowItem = ({ row, index, showRemove, documentContent, onUpdate, onRemove }: RowProps) => {
+  const debouncedTarget = useDebounce(row.target, 300);
+  const occurrenceCount = countOccurrences(documentContent, debouncedTarget);
+
+  return (
+    <li className={styles.changeRow}>
+      {showRemove && (
+        <div className={styles.rowHeader}>
+          <span className={styles.rowLabel}>Change {index + 1}</span>
+          <button
+            type="button"
+            className={styles.removeButton}
+            onClick={() => onRemove(row.id)}
+            aria-label="Remove change"
+          >
+            x
+          </button>
+        </div>
+      )}
+      <div className={styles.field}>
+        <label className={styles.label}>Target text</label>
+        <textarea
+          className={styles.textarea}
+          value={row.target}
+          onChange={(e) => onUpdate(row.id, "target", e.target.value)}
+          placeholder="Text to replace"
+        />
+        {debouncedTarget && (
+          <span
+            className={
+              occurrenceCount === 0
+                ? styles.occurrenceWarn
+                : styles.occurrenceHint
+            }
+          >
+            {occurrenceCount === 0
+              ? "not found in document"
+              : occurrenceCount + " occurrence" + (occurrenceCount === 1 ? "" : "s") + " found"}
+          </span>
+        )}
+      </div>
+      <div className={styles.field}>
+        <label className={styles.label}>Occurrence</label>
+        <input
+          className={styles.input}
+          type="number"
+          min={1}
+          value={row.occurrence}
+          onChange={(e) => onUpdate(row.id, "occurrence", Number(e.target.value))}
+        />
+      </div>
+      <div className={styles.field}>
+        <label className={styles.label}>Replacement</label>
+        <textarea
+          className={styles.textarea}
+          value={row.replacement}
+          onChange={(e) => onUpdate(row.id, "replacement", e.target.value)}
+          placeholder="Replace with"
+        />
+      </div>
+    </li>
   );
 };
 

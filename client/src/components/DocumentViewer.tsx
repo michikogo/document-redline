@@ -12,9 +12,15 @@ type Props = {
   documentId: string;
   overrideDoc?: Document;
   onOpenDrawer: (prefill?: string) => void;
+  onDocLoaded?: (doc: Document) => void;
 };
 
-const DocumentViewer = ({ documentId, overrideDoc, onOpenDrawer }: Props) => {
+const DocumentViewer = ({
+  documentId,
+  overrideDoc,
+  onOpenDrawer,
+  onDocLoaded,
+}: Props) => {
   const [state, dispatch] = useReducer((_prev: State, next: State) => next, {
     status: "loading",
   });
@@ -23,12 +29,18 @@ const DocumentViewer = ({ documentId, overrideDoc, onOpenDrawer }: Props) => {
   useEffect(() => {
     dispatch({ status: "loading" });
     getDocument(documentId)
-      .then((doc) => dispatch({ status: "ok", doc }))
+      .then((doc) => {
+        dispatch({ status: "ok", doc });
+        onDocLoaded?.(doc);
+      })
       .catch((err) => dispatch({ status: "error", message: err.message }));
   }, [documentId]);
 
   useEffect(() => {
-    if (overrideDoc) dispatch({ status: "ok", doc: overrideDoc });
+    if (overrideDoc) {
+      dispatch({ status: "ok", doc: overrideDoc });
+      onDocLoaded?.(overrideDoc);
+    }
   }, [overrideDoc]);
 
   const handleMouseUp = () => {
