@@ -43,7 +43,7 @@ cd client && npm test   # component tests
 
 ## Usage
 
-See [`requests.http`](./requests.http) for runnable examples in VS Code (REST Client extension) with curl equivalents.
+See [`requests.http`](./docs/requests.http) for runnable examples in VS Code (REST Client extension) with curl equivalents.
 
 ### Typical workflow
 
