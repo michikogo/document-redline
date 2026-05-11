@@ -1,12 +1,14 @@
-import Database from 'better-sqlite3'
-import path from 'path'
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import path from "path";
+import * as schema from "./schema.ts";
 
-const db = new Database(path.join(__dirname, '../../dev.db'))
+const sqlite = new Database(path.join(__dirname, "../../dev.db"));
 
-db.pragma('journal_mode = WAL')
-db.pragma('foreign_keys = ON')
+sqlite.pragma("journal_mode = WAL");
+sqlite.pragma("foreign_keys = ON");
 
-db.exec(`
+sqlite.exec(`
   CREATE TABLE IF NOT EXISTS documents (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
@@ -24,6 +26,9 @@ db.exec(`
     replacement TEXT NOT NULL,
     applied_at TEXT NOT NULL
   );
-`)
+`);
 
-export default db
+const db = drizzle(sqlite, { schema });
+
+export { sqlite };
+export default db;

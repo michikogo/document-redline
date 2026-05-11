@@ -23,9 +23,9 @@ describe("applyChange", () => {
   });
 
   it("throws when target text is not found", () => {
-    expect(() =>
-      applyChange("Hello world", "nonexistent", 1, "X"),
-    ).toThrow('target.text "nonexistent" not found in document');
+    expect(() => applyChange("Hello world", "nonexistent", 1, "X")).toThrow(
+      'target.text "nonexistent" not found in document',
+    );
   });
 
   it("throws when occurrence exceeds match count", () => {
