@@ -1,6 +1,6 @@
 node_modules/
 dist/
-docs/
+docs/dev/
 *.db
 *.db-shm
 *.db-wal

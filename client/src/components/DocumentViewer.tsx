@@ -1,4 +1,10 @@
-import React, { useEffect, useReducer, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { getDocument } from "../api/client";
 import type { Document, SearchResult } from "../api/client";
 import DocumentSearch from "./DocumentSearch";
@@ -30,6 +36,11 @@ const DocumentViewer = ({
   });
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [tooltip, setTooltip] = useState<{
+    text: string;
+    top: number;
+    left: number;
+  } | null>(null);
   const contentRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
@@ -53,12 +64,34 @@ const DocumentViewer = ({
 
   const handleMouseUp = () => {
     const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) return;
-    const selected = selection.toString().trim();
-    if (!selected || !contentRef.current?.contains(selection.anchorNode))
+    if (!selection || selection.isCollapsed) {
+      setTooltip(null);
       return;
-    onOpenDrawer(selected);
+    }
+    const selected = selection.toString().trim();
+    if (!selected || !contentRef.current?.contains(selection.anchorNode)) {
+      setTooltip(null);
+      return;
+    }
+    const rect = selection.getRangeAt(0).getBoundingClientRect();
+    setTooltip({
+      text: selected,
+      top: rect.top - 36,
+      left: rect.left + rect.width / 2,
+    });
   };
+
+  const handleTooltipClick = useCallback(() => {
+    if (!tooltip) return;
+    onOpenDrawer(tooltip.text);
+    setTooltip(null);
+  }, [tooltip, onOpenDrawer]);
+
+  useEffect(() => {
+    const dismiss = () => setTooltip(null);
+    document.addEventListener("mousedown", dismiss);
+    return () => document.removeEventListener("mousedown", dismiss);
+  }, []);
 
   const handleSearchResults = (result: SearchResult | null, query: string) => {
     setSearchResult(result);
@@ -75,6 +108,16 @@ const DocumentViewer = ({
 
   return (
     <div>
+      {tooltip && (
+        <div
+          className={styles.tooltip}
+          style={{ top: tooltip.top, left: tooltip.left }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={handleTooltipClick}
+        >
+          Replace
+        </div>
+      )}
       <div className={styles.header}>
         <div className={styles.headerText}>
           <h1 className={styles.title}>{doc.title}</h1>

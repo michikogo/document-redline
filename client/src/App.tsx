@@ -19,6 +19,9 @@ const App = () => {
   const [changeLogKey, setChangeLogKey] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTarget, setDrawerTarget] = useState<string | undefined>();
+  const [drawerPendingTarget, setDrawerPendingTarget] = useState<
+    string | undefined
+  >();
   const [drawerKey, setDrawerKey] = useState(0);
   const [selectedDocContent, setSelectedDocContent] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(
@@ -40,8 +43,15 @@ const App = () => {
       setDrawerOpen(false);
       return;
     }
-    setDrawerTarget(prefill);
-    setDrawerKey((k) => k + 1);
+    if (drawerOpen && prefill) {
+      // Drawer already open — add selected text as a new row
+      setDrawerPendingTarget(prefill);
+    } else {
+      // Opening fresh — reset the form with the selected text
+      setDrawerTarget(prefill);
+      setDrawerPendingTarget(undefined);
+      setDrawerKey((k) => k + 1);
+    }
     setDrawerOpen(true);
   };
 
@@ -80,7 +90,7 @@ const App = () => {
             + New
           </button>
         </div>
-        <SearchBar onSearch={handleSearch} />
+        <SearchBar onSearch={handleSearch} inputValue={searchQuery} />
         {searchResults ? (
           <SearchResults
             results={searchResults}
@@ -102,11 +112,10 @@ const App = () => {
               documentId={selectedId}
               overrideDoc={updatedDoc}
               onOpenDrawer={handleOpenDrawer}
-
               onDocLoaded={(doc) => setSelectedDocContent(doc.content)}
-=======
-              onSearchActive={(active) => { if (active) setDrawerOpen(false); }}
->>>>>>> 51ae1d9 (feat: close drawer when document search results appear)
+              onSearchActive={(active) => {
+                if (active) setDrawerOpen(false);
+              }}
             />
             <ChangeLog documentId={selectedId} refreshKey={changeLogKey} />
           </>
@@ -121,6 +130,7 @@ const App = () => {
             documentId={selectedId}
             documentContent={selectedDocContent}
             initialTarget={drawerTarget}
+            pendingTarget={drawerPendingTarget}
             onSuccess={handleChangeSuccess}
           />
         </Drawer>

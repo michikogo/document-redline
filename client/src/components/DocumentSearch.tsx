@@ -12,7 +12,7 @@ const DocumentSearch = ({ documentId, onResults }: Props) => {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     const q = query.trim();
     if (!q) {
