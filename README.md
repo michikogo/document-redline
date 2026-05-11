@@ -184,33 +184,51 @@ Same snippet format, scoped to a single document.
 
 ## Performance
 
-**Search** — case-insensitive string scan, O(n) per document. Benchmarked against a ~5MB document: completes in under 500ms. The production path is PostgreSQL FTS5 or an in-memory inverted index (term → document IDs + positions, rebuilt on server start) for O(1) repeated lookups. Trade-off: the index adds memory pressure and requires invalidation on every PATCH.
+The implementation is deliberately simple and performs well within the scope of this project:
 
-**Replace** — single-pass scan per target string, O(n) per change. Multiple changes in one PATCH each scan independently but commit in a single SQLite transaction — atomic with no extra round trips.
+- **Search** completes in under 500ms on a ~5MB document. Sufficient for a single-user prototype with a small corpus.
+- **Replace** is a single-pass scan per target, with all changes in one PATCH committed in a single SQLite transaction — no partial writes, no extra round trips.
+- **Large documents** (10MB+) are handled without loading extra copies of the content into memory.
 
-**Large documents** — the 10MB+ case is handled gracefully: the scan streams through content without loading extra copies into memory. The bottleneck at that size is the SQLite write, not the scan.
+For production, the natural next steps are SQLite FTS5 or an in-memory inverted index for search, and PostgreSQL to remove the write serialisation bottleneck. Both are covered in [`docs/production-readiness.md`](./docs/production-readiness.md).
 
 ---
 
-## Design Rationale
+## API Design Rationale
 
-**Targeted replacements over diffs** — Legal contracts have precise clause language. Rather than line-based diffs (which break on reflowed text), changes target an exact string and an occurrence index. This makes the intent explicit and auditable.
+- **Exact text + occurrence targeting** — Legal contracts have precise clause language. Targeting by exact string and occurrence index (e.g. `"Licensee"`, 3rd occurrence) makes each change explicit and auditable. Character offsets would be more precise but are fragile — they shift every time content changes.
+- **Atomic PATCH** — All changes in a single request either all succeed or all fail. Partial application would leave a contract in an inconsistent state, which is worse than rejecting the whole request.
+- **`occurrence` for disambiguation** — When "Licensee" appears 40 times in a contract, an integer index is the clearest way to target the third one specifically. It reads naturally in the request body and in the change log.
+- **Append-only change log** — Every applied change is recorded with its target text, occurrence, replacement, and timestamp. This gives a full audit trail without needing to diff content snapshots.
 
-**`occurrence` index for disambiguation** — When "Licensee" appears 40 times in a contract, you need a way to target the third one specifically. The occurrence field makes that unambiguous without requiring character offsets, which are fragile as content changes.
+---
 
-**Atomic PATCH** — All changes in a single request either all succeed or all fail. Partial application would leave a document in an inconsistent state.
+## Trade-offs
 
-**Append-only change log** — Every applied change is recorded with its target, occurrence, replacement, and timestamp. This gives a full audit trail without needing to diff content snapshots.
+### SQLite over PostgreSQL
+**Purpose:** Zero-setup local development — one file, no server process, no connection string.  
+**Benefit:** Anyone can clone and run without installing a database.  
+**Trade-off:** Serialises all writes, so concurrent editors queue up rather than write in parallel. PostgreSQL is the natural migration path when that matters.
 
-**Version number over ETag** — Every document carries a `version` integer that increments on each successful PATCH, giving clients a way to detect stale reads. A full ETag implementation would check an `If-Match` header on every PATCH and return `412 Precondition Failed` if the document has changed since the client last fetched it — preventing two concurrent editors from silently overwriting each other. Not implemented here given the single-user scope, but a natural next step for a multi-user production system.
+### Append-only change log over snapshots
+**Purpose:** Record every edit with its target text, occurrence, replacement, and timestamp.  
+**Benefit:** Full audit trail with minimal storage — only what changed is stored, not full document copies.  
+**Trade-off:** Reverting a change requires replaying the log in reverse. Snapshots make revert trivial but storage grows with every edit.
 
-**Drizzle ORM** — Chosen for type-safe queries without heavy abstractions. The schema lives in `server/src/schema.ts` and serves as the single source of truth for both the database and TypeScript types.
+### Version number over ETag
+**Purpose:** Give clients a way to detect if a document has changed since they last fetched it.  
+**Benefit:** Simple integer that increments on every PATCH — easy to check and display in the UI.  
+**Trade-off:** Doesn't enforce anything — two editors can still overwrite each other silently. ETag + `If-Match` on PATCH would prevent that.
 
-**RESTful PATCH over action-based endpoints** — `PATCH /api/documents/:id` was chosen over `POST /api/documents/:id/apply-changes`. REST is more predictable and cacheable, and PATCH accurately describes a partial update. The trade-off: PATCH implies idempotency, but our operation isn't strictly idempotent (applying the same change twice would fail on the second attempt if the target text is already replaced). An action-based endpoint would make that clearer. For this scope, REST's familiarity wins.
+### Document content stored in SQLite over external storage
+**Purpose:** Keep the stack simple — one database for both metadata and content.  
+**Benefit:** No external dependencies; content is transactional with document metadata.  
+**Trade-off:** Large documents bloat the database and slow backups. Production path is blob storage (e.g. S3) with a key reference in the DB.
 
-**SQLite over PostgreSQL** — SQLite was a deliberate choice for zero-setup local development (one file, no server process, no connection string). The trade-off is that SQLite serialises all writes — two concurrent editors would queue up rather than write in parallel. Acceptable for a single-user prototype; PostgreSQL is the natural migration path when concurrency matters.
-
-**Append-only change log over document snapshots** — each change stores only what changed (target text, occurrence, replacement, timestamp) rather than a full copy of the document. This keeps storage lean but makes reverting a change complex — you'd need to replay the log in reverse. Snapshots make revert trivial but storage grows with every edit. For an audit-trail use case, the log approach is the right default.
+### Synchronous PATCH over background jobs
+**Purpose:** Apply changes and return the updated document in a single request.  
+**Benefit:** Simple client experience — no polling or webhooks needed.  
+**Trade-off:** A large document with many replacements holds the HTTP connection open. Production path is a job queue returning `202 Accepted` + a job ID.
 
 ---
 
