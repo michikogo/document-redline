@@ -86,6 +86,7 @@ describe("ChangeForm", () => {
       />,
     );
 
+    await userEvent.type(screen.getByPlaceholderText("Replace with"), "Replacement");
     await userEvent.click(screen.getByRole("button", { name: /apply/i }));
 
     await waitFor(() => {
@@ -103,6 +104,7 @@ describe("ChangeForm", () => {
       />,
     );
 
+    await userEvent.type(screen.getByPlaceholderText("Replace with"), "Hi");
     await userEvent.click(screen.getByRole("button", { name: /apply/i }));
 
     expect(screen.getByRole("button", { name: /applying/i })).toBeDisabled();
