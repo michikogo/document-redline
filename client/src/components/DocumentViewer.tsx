@@ -1,6 +1,8 @@
-import React, { useEffect, useReducer, useRef } from "react";
+import React, { useEffect, useReducer, useRef, useState } from "react";
 import { getDocument } from "../api/client";
-import type { Document } from "../api/client";
+import type { Document, SearchResult } from "../api/client";
+import DocumentSearch from "./DocumentSearch";
+import DocumentSearchResults from "./DocumentSearchResults";
 import styles from "../styles/DocumentViewer.module.css";
 
 type State =
@@ -24,10 +26,14 @@ const DocumentViewer = ({
   const [state, dispatch] = useReducer((_prev: State, next: State) => next, {
     status: "loading",
   });
+  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const contentRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
     dispatch({ status: "loading" });
+    setSearchResult(null);
+    setSearchQuery("");
     getDocument(documentId)
       .then((doc) => {
         dispatch({ status: "ok", doc });
@@ -50,6 +56,11 @@ const DocumentViewer = ({
     if (!selected || !contentRef.current?.contains(selection.anchorNode))
       return;
     onOpenDrawer(selected);
+  };
+
+  const handleSearchResults = (result: SearchResult | null, query: string) => {
+    setSearchResult(result);
+    setSearchQuery(query);
   };
 
   if (state.status === "error")
@@ -76,6 +87,10 @@ const DocumentViewer = ({
           Update Doc
         </button>
       </div>
+      <DocumentSearch documentId={documentId} onResults={handleSearchResults} />
+      {searchResult && (
+        <DocumentSearchResults result={searchResult} query={searchQuery} />
+      )}
       <pre
         ref={contentRef}
         className={styles.content}
