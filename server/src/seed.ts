@@ -1,5 +1,5 @@
-import db from "./db.ts";
-import { documents, changes } from "./schema.ts";
+import db from "./db";
+import { documents, changes } from "./schema";
 
 const now = new Date().toISOString();
 

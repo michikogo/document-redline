@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { applyChanges } from "../api/client";
 import type { Document } from "../api/client";
 import useDebounce from "../hooks/useDebounce";
@@ -35,6 +35,7 @@ type Props = {
   documentId: string;
   documentContent?: string;
   initialTarget?: string;
+  pendingTarget?: string;
   onSuccess: (updated: Document) => void;
 };
 
@@ -42,9 +43,16 @@ const ChangeForm = ({
   documentId,
   documentContent = "",
   initialTarget,
+  pendingTarget,
   onSuccess,
 }: Props) => {
   const [rows, setRows] = useState<ChangeRow[]>([makeRow(initialTarget ?? "")]);
+
+  useEffect(() => {
+    if (pendingTarget) {
+      setRows((prev) => [...prev, makeRow(pendingTarget)]);
+    }
+  }, [pendingTarget]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -65,7 +73,7 @@ const ChangeForm = ({
 
   const isValid = rows.every((r) => r.target.trim() && r.replacement.trim());
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -125,11 +133,22 @@ type RowProps = {
   index: number;
   showRemove: boolean;
   documentContent: string;
-  onUpdate: (id: string, field: keyof Omit<ChangeRow, "id">, value: string | number) => void;
+  onUpdate: (
+    id: string,
+    field: keyof Omit<ChangeRow, "id">,
+    value: string | number,
+  ) => void;
   onRemove: (id: string) => void;
 };
 
-const ChangeRowItem = ({ row, index, showRemove, documentContent, onUpdate, onRemove }: RowProps) => {
+const ChangeRowItem = ({
+  row,
+  index,
+  showRemove,
+  documentContent,
+  onUpdate,
+  onRemove,
+}: RowProps) => {
   const debouncedTarget = useDebounce(row.target, 300);
   const occurrenceCount = countOccurrences(documentContent, debouncedTarget);
 
@@ -166,7 +185,10 @@ const ChangeRowItem = ({ row, index, showRemove, documentContent, onUpdate, onRe
           >
             {occurrenceCount === 0
               ? "not found in document"
-              : occurrenceCount + " occurrence" + (occurrenceCount === 1 ? "" : "s") + " found"}
+              : occurrenceCount +
+                " occurrence" +
+                (occurrenceCount === 1 ? "" : "s") +
+                " found"}
           </span>
         )}
       </div>
@@ -177,7 +199,9 @@ const ChangeRowItem = ({ row, index, showRemove, documentContent, onUpdate, onRe
           type="number"
           min={1}
           value={row.occurrence}
-          onChange={(e) => onUpdate(row.id, "occurrence", Number(e.target.value))}
+          onChange={(e) =>
+            onUpdate(row.id, "occurrence", Number(e.target.value))
+          }
         />
       </div>
       <div className={styles.field}>

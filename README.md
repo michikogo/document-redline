@@ -2,8 +2,6 @@
 
 A document redlining service — REST API + React UI for making targeted text changes to contracts and searching across document content.
 
-Built as a take-home project for Sandstone.
-
 ---
 
 ## Stack

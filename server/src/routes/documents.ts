@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { eq, desc } from "drizzle-orm";
-import db, { sqlite } from "../db.ts";
-import { documents, changes } from "../schema.ts";
-import { AppError } from "../middleware/errorHandler.ts";
-import { applyChanges, Change } from "../services/changeService.ts";
+import db, { sqlite } from "../db";
+import { documents, changes } from "../schema";
+import { AppError } from "../middleware/errorHandler";
+import { applyChanges, Change } from "../services/changeService";
 
 const router = Router();
 

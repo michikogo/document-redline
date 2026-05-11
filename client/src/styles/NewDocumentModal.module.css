@@ -86,7 +86,6 @@
 }
 
 .textarea {
-  composes: input;
   resize: vertical;
   min-height: 200px;
   font-family: inherit;

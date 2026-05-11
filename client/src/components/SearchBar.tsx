@@ -1,15 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "../styles/SearchBar.module.css";
 
 type Props = {
   onSearch: (q: string) => void;
   placeholder?: string;
+  inputValue?: string;
 };
 
-const SearchBar = ({ onSearch, placeholder = "Search documents…" }: Props) => {
-  const [value, setValue] = useState("");
+const SearchBar = ({
+  onSearch,
+  placeholder = "Search documents…",
+  inputValue = "",
+}: Props) => {
+  const [value, setValue] = useState(inputValue);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    setValue(inputValue);
+  }, [inputValue]);
+
+  const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
     onSearch(value.trim());
   };

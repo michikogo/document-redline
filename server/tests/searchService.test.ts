@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   extractSnippets,
   searchDocuments,
-} from "../src/services/searchService.ts";
+} from "../src/services/searchService";
 
 describe("extractSnippets", () => {
   it("returns a snippet for a single match", () => {

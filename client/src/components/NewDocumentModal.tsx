@@ -24,7 +24,7 @@ const NewDocumentModal = ({ onClose, onCreated }: Props) => {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
