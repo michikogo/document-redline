@@ -1,6 +1,7 @@
 import React, { useEffect, useReducer } from "react";
 import { getDocument } from "../api/client";
 import type { Document } from "../api/client";
+import styles from "./DocumentViewer.module.css";
 
 type State =
   | { status: "loading" }
@@ -12,9 +13,10 @@ type Props = {
 };
 
 const DocumentViewer = ({ documentId }: Props) => {
-  const [state, dispatch] = useReducer((_prev: State, next: State) => next, {
-    status: "loading",
-  });
+  const [state, dispatch] = useReducer(
+    (_prev: State, next: State) => next,
+    { status: "loading" },
+  );
 
   useEffect(() => {
     dispatch({ status: "loading" });
@@ -23,46 +25,20 @@ const DocumentViewer = ({ documentId }: Props) => {
       .catch((err) => dispatch({ status: "error", message: err.message }));
   }, [documentId]);
 
-  if (state.status === "error")
-    return <p style={{ color: "#ef4444" }}>{state.message}</p>;
-  if (state.status === "loading")
-    return <p style={{ color: "var(--text-muted)" }}>Loading...</p>;
+  if (state.status === "error") return <p className={styles.error}>{state.message}</p>;
+  if (state.status === "loading") return <p className={styles.loading}>Loading...</p>;
 
   const { doc } = state;
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <h1
-          style={{
-            margin: "0 0 4px",
-            fontSize: 20,
-            color: "var(--text-heading)",
-            fontWeight: 600,
-          }}
-        >
-          {doc.title}
-        </h1>
-        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-          Version {doc.version} · Updated{" "}
-          {new Date(doc.updated_at).toLocaleString()}
+      <div className={styles.header}>
+        <h1 className={styles.title}>{doc.title}</h1>
+        <span className={styles.meta}>
+          Version {doc.version} · Updated {new Date(doc.updated_at).toLocaleString()}
         </span>
       </div>
-      <pre
-        style={{
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          background: "var(--bg-pre)",
-          border: "1px solid var(--border-pre)",
-          borderRadius: 6,
-          padding: 16,
-          fontSize: 14,
-          lineHeight: 1.6,
-          color: "var(--text)",
-        }}
-      >
-        {doc.content}
-      </pre>
+      <pre className={styles.content}>{doc.content}</pre>
     </div>
   );
 };

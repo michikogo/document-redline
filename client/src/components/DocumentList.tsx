@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getDocuments } from "../api/client";
 import type { DocumentSummary } from "../api/client";
+import styles from "./DocumentList.module.css";
 
 type Props = {
   selectedId: string | null;
@@ -17,49 +18,23 @@ const DocumentList = ({ selectedId, onSelect }: Props) => {
       .catch((err) => setError(err.message));
   }, []);
 
-  if (error) return <p style={{ color: "#ef4444", fontSize: 13 }}>{error}</p>;
-
-  if (documents.length === 0)
-    return (
-      <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-        No documents yet.
-      </p>
-    );
+  if (error) return <p className={styles.error}>{error}</p>;
+  if (documents.length === 0) return <p className={styles.empty}>No documents yet.</p>;
 
   return (
-    <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-      {documents.map((doc) => {
-        const isSelected = selectedId === doc.id;
-        return (
-          <li
-            key={doc.id}
-            onClick={() => onSelect(doc.id)}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 6,
-              cursor: "pointer",
-              marginBottom: 4,
-              background: isSelected ? "var(--bg-selected)" : "transparent",
-              borderLeft: `3px solid ${isSelected ? "var(--accent-border)" : "transparent"}`,
-            }}
-          >
-            <div
-              style={{
-                fontWeight: 500,
-                fontSize: 14,
-                color: "var(--text-heading)",
-              }}
-            >
-              {doc.title}
-            </div>
-            <div
-              style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}
-            >
-              v{doc.version} · {new Date(doc.updated_at).toLocaleDateString()}
-            </div>
-          </li>
-        );
-      })}
+    <ul className={styles.list}>
+      {documents.map((doc) => (
+        <li
+          key={doc.id}
+          onClick={() => onSelect(doc.id)}
+          className={`${styles.item} ${selectedId === doc.id ? styles.itemSelected : ""}`}
+        >
+          <div className={styles.title}>{doc.title}</div>
+          <div className={styles.meta}>
+            v{doc.version} · {new Date(doc.updated_at).toLocaleDateString()}
+          </div>
+        </li>
+      ))}
     </ul>
   );
 };
