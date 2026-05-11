@@ -102,7 +102,11 @@ const App = () => {
               documentId={selectedId}
               overrideDoc={updatedDoc}
               onOpenDrawer={handleOpenDrawer}
+
               onDocLoaded={(doc) => setSelectedDocContent(doc.content)}
+=======
+              onSearchActive={(active) => { if (active) setDrawerOpen(false); }}
+>>>>>>> 51ae1d9 (feat: close drawer when document search results appear)
             />
             <ChangeLog documentId={selectedId} refreshKey={changeLogKey} />
           </>

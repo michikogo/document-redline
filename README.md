@@ -138,6 +138,8 @@ Same snippet format, scoped to a single document.
 
 **Append-only change log** — Every applied change is recorded with its target, occurrence, replacement, and timestamp. This gives a full audit trail without needing to diff content snapshots.
 
-**String scan for search (Phase 1)** — The search service uses a case-insensitive string scan rather than SQLite FTS. For the scope of this project it's fast enough and keeps the stack simple. A production version would use FTS5 or a dedicated search index.
+**String scan for search (Phase 1)** — The search service uses a case-insensitive string scan rather than SQLite FTS. For the scope of this project it's fast enough and keeps the stack simple. A production version would use FTS5 or a dedicated search index. An in-memory inverted index (term → list of document IDs + positions, rebuilt on server start) would make repeated searches O(1) lookups instead of O(n) scans, at the cost of memory and cache invalidation complexity on every write.
+
+**Version number over ETag** — Every document carries a `version` integer that increments on each successful PATCH, giving clients a way to detect stale reads. A full ETag implementation would check an `If-Match` header on every PATCH and return `412 Precondition Failed` if the document has changed since the client last fetched it — preventing two concurrent editors from silently overwriting each other. Not implemented here given the single-user scope, but a natural next step for a multi-user production system.
 
 **Drizzle ORM** — Chosen for type-safe queries without heavy abstractions. The schema lives in `server/src/schema.ts` and serves as the single source of truth for both the database and TypeScript types.
