@@ -4,7 +4,10 @@ import DocumentViewer from "./components/DocumentViewer";
 import ChangeForm from "./components/ChangeForm";
 import ChangeLog from "./components/ChangeLog";
 import Drawer from "./components/Drawer";
-import type { Document } from "./api/client";
+import SearchBar from "./components/SearchBar";
+import SearchResults from "./components/SearchResults";
+import type { Document, SearchResult } from "./api/client";
+import { searchDocuments } from "./api/client";
 import styles from "./styles/App.module.css";
 
 const App = () => {
@@ -14,11 +17,17 @@ const App = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTarget, setDrawerTarget] = useState<string | undefined>();
   const [drawerKey, setDrawerKey] = useState(0);
+  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(
+    null,
+  );
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
     setUpdatedDoc(undefined);
     setDrawerOpen(false);
+    setSearchResults(null);
+    setSearchQuery("");
   };
 
   const handleOpenDrawer = (prefill?: string) => {
@@ -37,11 +46,31 @@ const App = () => {
     setDrawerOpen(false);
   };
 
+  const handleSearch = async (q: string) => {
+    if (!q) {
+      setSearchResults(null);
+      setSearchQuery("");
+      return;
+    }
+    setSearchQuery(q);
+    const results = await searchDocuments(q);
+    setSearchResults(results);
+  };
+
   return (
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
         <h2 className={styles.sidebarHeading}>Documents</h2>
-        <DocumentList selectedId={selectedId} onSelect={handleSelect} />
+        <SearchBar onSearch={handleSearch} />
+        {searchResults ? (
+          <SearchResults
+            results={searchResults}
+            query={searchQuery}
+            onSelectDocument={handleSelect}
+          />
+        ) : (
+          <DocumentList selectedId={selectedId} onSelect={handleSelect} />
+        )}
       </aside>
       <main className={styles.main}>
         {selectedId ? (
