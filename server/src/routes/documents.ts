@@ -134,20 +134,23 @@ router.patch("/:id", (req: Request, res: Response, next: NextFunction) => {
   res.json(updated);
 });
 
-router.get("/:id/changes", (req: Request, res: Response, next: NextFunction) => {
-  const doc = db
-    .prepare("SELECT id FROM documents WHERE id = ?")
-    .get(req.params.id);
+router.get(
+  "/:id/changes",
+  (req: Request, res: Response, next: NextFunction) => {
+    const doc = db
+      .prepare("SELECT id FROM documents WHERE id = ?")
+      .get(req.params.id);
 
-  if (!doc) return next(new AppError(404, "Document not found"));
+    if (!doc) return next(new AppError(404, "Document not found"));
 
-  const changes = db
-    .prepare(
-      "SELECT id, document_id, target_text, occurrence, replacement, applied_at FROM changes WHERE document_id = ? ORDER BY applied_at ASC",
-    )
-    .all(req.params.id);
+    const changes = db
+      .prepare(
+        "SELECT id, document_id, target_text, occurrence, replacement, applied_at FROM changes WHERE document_id = ? ORDER BY applied_at ASC",
+      )
+      .all(req.params.id);
 
-  res.json(changes);
-});
+    res.json(changes);
+  },
+);
 
 export default router;

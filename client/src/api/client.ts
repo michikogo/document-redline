@@ -37,8 +37,7 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   return res.json();
 };
 
-export const getDocuments = () =>
-  request<DocumentSummary[]>("/api/documents");
+export const getDocuments = () => request<DocumentSummary[]>("/api/documents");
 
 export const getDocument = (id: string) =>
   request<Document>(`/api/documents/${id}`);

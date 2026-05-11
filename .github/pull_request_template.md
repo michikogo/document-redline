@@ -1,12 +1,11 @@
 ## Summary
 
-
 ## Changes
-- 
-- 
+
+-
+-
 
 ## Notable Decisions
-
 
 ## How to Run
 
@@ -16,6 +15,6 @@ npm run dev
 
 ## Test Plan
 
-- [ ] 
-- [ ] 
-- [ ] 
+- [ ]
+- [ ]
+- [ ]

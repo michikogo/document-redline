@@ -1,10 +1,10 @@
-import Database from 'better-sqlite3'
-import path from 'path'
+import Database from "better-sqlite3";
+import path from "path";
 
-const db = new Database(path.join(__dirname, '../../dev.db'))
+const db = new Database(path.join(__dirname, "../../dev.db"));
 
-db.pragma('journal_mode = WAL')
-db.pragma('foreign_keys = ON')
+db.pragma("journal_mode = WAL");
+db.pragma("foreign_keys = ON");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS documents (
@@ -24,6 +24,6 @@ db.exec(`
     replacement TEXT NOT NULL,
     applied_at TEXT NOT NULL
   );
-`)
+`);
 
-export default db
+export default db;
