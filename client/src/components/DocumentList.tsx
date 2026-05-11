@@ -34,7 +34,10 @@ const DocumentList = ({ selectedId, onSelect }: Props) => {
             cursor: "pointer",
             marginBottom: 4,
             background: selectedId === doc.id ? "#eff6ff" : "transparent",
-            borderLeft: selectedId === doc.id ? "3px solid #3b82f6" : "3px solid transparent",
+            borderLeft:
+              selectedId === doc.id
+                ? "3px solid #3b82f6"
+                : "3px solid transparent",
           }}
         >
           <div style={{ fontWeight: 500, fontSize: 14, color: "#111827" }}>
