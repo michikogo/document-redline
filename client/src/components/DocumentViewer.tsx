@@ -15,6 +15,7 @@ type Props = {
   overrideDoc?: Document;
   onOpenDrawer: (prefill?: string) => void;
   onDocLoaded?: (doc: Document) => void;
+  onSearchActive?: (active: boolean) => void;
 };
 
 const DocumentViewer = ({
@@ -22,6 +23,7 @@ const DocumentViewer = ({
   overrideDoc,
   onOpenDrawer,
   onDocLoaded,
+  onSearchActive,
 }: Props) => {
   const [state, dispatch] = useReducer((_prev: State, next: State) => next, {
     status: "loading",
@@ -61,6 +63,7 @@ const DocumentViewer = ({
   const handleSearchResults = (result: SearchResult | null, query: string) => {
     setSearchResult(result);
     setSearchQuery(query);
+    onSearchActive?.(result !== null);
   };
 
   if (state.status === "error")
@@ -88,16 +91,17 @@ const DocumentViewer = ({
         </button>
       </div>
       <DocumentSearch documentId={documentId} onResults={handleSearchResults} />
-      {searchResult && (
+      {searchResult ? (
         <DocumentSearchResults result={searchResult} query={searchQuery} />
+      ) : (
+        <pre
+          ref={contentRef}
+          className={styles.content}
+          onMouseUp={handleMouseUp}
+        >
+          {doc.content}
+        </pre>
       )}
-      <pre
-        ref={contentRef}
-        className={styles.content}
-        onMouseUp={handleMouseUp}
-      >
-        {doc.content}
-      </pre>
     </div>
   );
 };
