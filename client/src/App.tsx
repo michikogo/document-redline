@@ -6,12 +6,15 @@ import ChangeLog from "./components/ChangeLog";
 import Drawer from "./components/Drawer";
 import SearchBar from "./components/SearchBar";
 import SearchResults from "./components/SearchResults";
+import NewDocumentModal from "./components/NewDocumentModal";
 import type { Document, SearchResult } from "./api/client";
 import { searchDocuments } from "./api/client";
 import styles from "./styles/App.module.css";
 
 const App = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showNewDoc, setShowNewDoc] = useState(false);
+  const [docListKey, setDocListKey] = useState(0);
   const [updatedDoc, setUpdatedDoc] = useState<Document | undefined>();
   const [changeLogKey, setChangeLogKey] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -46,6 +49,12 @@ const App = () => {
     setDrawerOpen(false);
   };
 
+  const handleDocCreated = (doc: Document) => {
+    setDocListKey((k) => k + 1);
+    setShowNewDoc(false);
+    handleSelect(doc.id);
+  };
+
   const handleSearch = async (q: string) => {
     if (!q) {
       setSearchResults(null);
@@ -60,7 +69,15 @@ const App = () => {
   return (
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
-        <h2 className={styles.sidebarHeading}>Documents</h2>
+        <div className={styles.sidebarHeader}>
+          <h2 className={styles.sidebarHeading}>Documents</h2>
+          <button
+            className={styles.newDocButton}
+            onClick={() => setShowNewDoc(true)}
+          >
+            + New
+          </button>
+        </div>
         <SearchBar onSearch={handleSearch} />
         {searchResults ? (
           <SearchResults
@@ -69,7 +86,11 @@ const App = () => {
             onSelectDocument={handleSelect}
           />
         ) : (
-          <DocumentList selectedId={selectedId} onSelect={handleSelect} />
+          <DocumentList
+            key={docListKey}
+            selectedId={selectedId}
+            onSelect={handleSelect}
+          />
         )}
       </aside>
       <main className={styles.main}>
@@ -95,6 +116,12 @@ const App = () => {
             onSuccess={handleChangeSuccess}
           />
         </Drawer>
+      )}
+      {showNewDoc && (
+        <NewDocumentModal
+          onClose={() => setShowNewDoc(false)}
+          onCreated={handleDocCreated}
+        />
       )}
     </div>
   );
