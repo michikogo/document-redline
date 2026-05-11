@@ -206,6 +206,12 @@ Same snippet format, scoped to a single document.
 
 **Drizzle ORM** — Chosen for type-safe queries without heavy abstractions. The schema lives in `server/src/schema.ts` and serves as the single source of truth for both the database and TypeScript types.
 
+**RESTful PATCH over action-based endpoints** — `PATCH /api/documents/:id` was chosen over `POST /api/documents/:id/apply-changes`. REST is more predictable and cacheable, and PATCH accurately describes a partial update. The trade-off: PATCH implies idempotency, but our operation isn't strictly idempotent (applying the same change twice would fail on the second attempt if the target text is already replaced). An action-based endpoint would make that clearer. For this scope, REST's familiarity wins.
+
+**SQLite over PostgreSQL** — SQLite was a deliberate choice for zero-setup local development (one file, no server process, no connection string). The trade-off is that SQLite serialises all writes — two concurrent editors would queue up rather than write in parallel. Acceptable for a single-user prototype; PostgreSQL is the natural migration path when concurrency matters.
+
+**Append-only change log over document snapshots** — each change stores only what changed (target text, occurrence, replacement, timestamp) rather than a full copy of the document. This keeps storage lean but makes reverting a change complex — you'd need to replay the log in reverse. Snapshots make revert trivial but storage grows with every edit. For an audit-trail use case, the log approach is the right default.
+
 ---
 
 ## Future Improvements
