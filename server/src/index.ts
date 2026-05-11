@@ -1,6 +1,7 @@
 import express from "express";
 import "./db";
 import documentRoutes from "./routes/documents";
+import searchRoutes from "./routes/search";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -10,6 +11,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.use("/api/documents", searchRoutes);
 app.use("/api/documents", documentRoutes);
 app.use(errorHandler);
 
