@@ -25,6 +25,7 @@
   padding: 24px;
   overflow-y: auto;
   background: var(--bg);
+  min-width: 0;
 }
 
 .empty {
