@@ -6,10 +6,11 @@ const App = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif", background: "#fff", color: "#111827" }}>
       <aside
         style={{
           width: 280,
+          background: "#fff",
           borderRight: "1px solid #e5e7eb",
           padding: 16,
           overflowY: "auto",
@@ -20,7 +21,7 @@ const App = () => {
         </h2>
         <DocumentList selectedId={selectedId} onSelect={setSelectedId} />
       </aside>
-      <main style={{ flex: 1, padding: 24, overflowY: "auto" }}>
+      <main style={{ flex: 1, padding: 24, overflowY: "auto", background: "#fff" }}>
         {selectedId ? (
           <DocumentViewer documentId={selectedId} />
         ) : (
