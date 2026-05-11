@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { applyChanges } from "../api/client";
 import type { Document } from "../api/client";
-import styles from "./ChangeForm.module.css";
+import styles from "../styles/ChangeForm.module.css";
 
 type Props = {
   documentId: string;

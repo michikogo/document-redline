@@ -5,7 +5,7 @@ import ChangeForm from "./components/ChangeForm";
 import ChangeLog from "./components/ChangeLog";
 import Drawer from "./components/Drawer";
 import type { Document } from "./api/client";
-import styles from "./App.module.css";
+import styles from "./styles/App.module.css";
 
 const App = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getDocuments } from "../api/client";
 import type { DocumentSummary } from "../api/client";
-import styles from "./DocumentList.module.css";
+import styles from "../styles/DocumentList.module.css";
 
 type Props = {
   selectedId: string | null;

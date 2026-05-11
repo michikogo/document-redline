@@ -1,5 +1,5 @@
 import React from "react";
-import styles from "./Drawer.module.css";
+import styles from "../styles/Drawer.module.css";
 
 type Props = {
   open: boolean;

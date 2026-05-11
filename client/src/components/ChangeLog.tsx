@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getChanges } from "../api/client";
 import type { Change } from "../api/client";
-import styles from "./ChangeLog.module.css";
+import styles from "../styles/ChangeLog.module.css";
 
 type Props = {
   documentId: string;

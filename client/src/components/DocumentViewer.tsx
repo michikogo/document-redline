@@ -1,7 +1,7 @@
 import React, { useEffect, useReducer, useRef } from "react";
 import { getDocument } from "../api/client";
 import type { Document } from "../api/client";
-import styles from "./DocumentViewer.module.css";
+import styles from "../styles/DocumentViewer.module.css";
 
 type State =
   | { status: "loading" }
