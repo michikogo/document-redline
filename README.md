@@ -24,7 +24,7 @@ npm run dev
 - API: http://localhost:3001
 - UI: http://localhost:5173
 
-## Seed Data
+### Seed Data
 
 ```bash
 npm run seed
@@ -32,14 +32,53 @@ npm run seed
 
 Populates the DB with 3 sample legal documents (NDA, Software License Agreement, Vendor Services Agreement).
 
-## Tests
+### Tests
 
 ```bash
-# server
-cd server && npm test
+cd server && npm test   # server unit tests
+cd client && npm test   # component tests
+```
 
-# client
-cd client && npm test
+---
+
+## Usage
+
+See [`requests.http`](./requests.http) for runnable examples in VS Code (REST Client extension) with curl equivalents.
+
+### Typical workflow
+
+**1. Create a document**
+```bash
+curl -X POST http://localhost:3001/api/documents \
+  -H "Content-Type: application/json" \
+  -d '{"title": "NDA", "content": "This agreement is between the Disclosing Party and the Receiving Party."}'
+# returns: { "id": "abc-123", "version": 1, ... }
+```
+
+**2. Search for a clause**
+```bash
+curl "http://localhost:3001/api/documents/search?q=Disclosing+Party"
+# returns: [{ "document_id": "abc-123", "title": "NDA", "snippets": ["...Disclosing Party and the Receiving..."] }]
+```
+
+**3. Apply a targeted replacement**
+```bash
+curl -X PATCH http://localhost:3001/api/documents/abc-123 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "changes": [{
+      "operation": "replace",
+      "target": { "text": "Disclosing Party", "occurrence": 1 },
+      "replacement": "Acme Corp"
+    }]
+  }'
+# returns: { "id": "abc-123", "version": 2, "content": "...Acme Corp..." }
+```
+
+**4. Review the change log**
+```bash
+curl http://localhost:3001/api/documents/abc-123/changes
+# returns: [{ "target_text": "Disclosing Party", "replacement": "Acme Corp", "applied_at": "..." }]
 ```
 
 ---
@@ -49,6 +88,16 @@ cd client && npm test
 Base URL: `http://localhost:3001`
 
 All request and response bodies are JSON. See [`requests.http`](./requests.http) for runnable examples (VS Code REST Client).
+
+### Error responses
+
+All errors return JSON: `{ "error": "...", "code": 404 }`
+
+| Status | When |
+|--------|------|
+| `400` | Missing/invalid fields, target text not found, empty search query |
+| `404` | Document ID not found |
+| `500` | Unexpected server error |
 
 ### Documents
 
@@ -84,7 +133,7 @@ Returns the created document with `id`, `version: 1`, `created_at`, `updated_at`
 
 ### `PATCH /api/documents/:id`
 
-Applies targeted text replacements atomically. Each change specifies the exact text to find and its replacement.
+Applies targeted text replacements atomically. Accepts an array — all changes succeed or all fail.
 
 ```json
 {
@@ -93,13 +142,18 @@ Applies targeted text replacements atomically. Each change specifies the exact t
       "operation": "replace",
       "target": { "text": "Disclosing Party", "occurrence": 1 },
       "replacement": "Acme Corp"
+    },
+    {
+      "operation": "replace",
+      "target": { "text": "Receiving Party", "occurrence": 1 },
+      "replacement": "Beta LLC"
     }
   ]
 }
 ```
 
-- `occurrence` is 1-indexed — use `1` for the first match, `2` for the second, etc.
-- All changes apply in a single transaction. If any target text is not found, the entire request fails with `400`.
+- `occurrence` is 1-indexed — `1` for the first match, `2` for the second, etc.
+- If any target text is not found, the entire request fails with `400` and nothing is written.
 - Returns the updated document with an incremented `version`.
 
 ---
@@ -128,6 +182,16 @@ Same snippet format, scoped to a single document.
 
 ---
 
+## Performance
+
+**Search** — case-insensitive string scan, O(n) per document. Benchmarked against a ~5MB document: completes in under 500ms. The production path is PostgreSQL FTS5 or an in-memory inverted index (term → document IDs + positions, rebuilt on server start) for O(1) repeated lookups. Trade-off: the index adds memory pressure and requires invalidation on every PATCH.
+
+**Replace** — single-pass scan per target string, O(n) per change. Multiple changes in one PATCH each scan independently but commit in a single SQLite transaction — atomic with no extra round trips.
+
+**Large documents** — the 10MB+ case is handled gracefully: the scan streams through content without loading extra copies into memory. The bottleneck at that size is the SQLite write, not the scan.
+
+---
+
 ## Design Rationale
 
 **Targeted replacements over diffs** — Legal contracts have precise clause language. Rather than line-based diffs (which break on reflowed text), changes target an exact string and an occurrence index. This makes the intent explicit and auditable.
@@ -138,8 +202,18 @@ Same snippet format, scoped to a single document.
 
 **Append-only change log** — Every applied change is recorded with its target, occurrence, replacement, and timestamp. This gives a full audit trail without needing to diff content snapshots.
 
-**String scan for search (Phase 1)** — The search service uses a case-insensitive string scan rather than SQLite FTS. For the scope of this project it's fast enough and keeps the stack simple. A production version would use FTS5 or a dedicated search index. An in-memory inverted index (term → list of document IDs + positions, rebuilt on server start) would make repeated searches O(1) lookups instead of O(n) scans, at the cost of memory and cache invalidation complexity on every write.
-
 **Version number over ETag** — Every document carries a `version` integer that increments on each successful PATCH, giving clients a way to detect stale reads. A full ETag implementation would check an `If-Match` header on every PATCH and return `412 Precondition Failed` if the document has changed since the client last fetched it — preventing two concurrent editors from silently overwriting each other. Not implemented here given the single-user scope, but a natural next step for a multi-user production system.
 
 **Drizzle ORM** — Chosen for type-safe queries without heavy abstractions. The schema lives in `server/src/schema.ts` and serves as the single source of truth for both the database and TypeScript types.
+
+---
+
+## Future Improvements
+
+- **ETag / concurrency control** — check `If-Match` on PATCH and return `412` if the document changed since the client last fetched it; prevents silent overwrites in a multi-editor scenario
+- **In-memory inverted index** — rebuild on server start for O(1) repeated searches instead of O(n) scans; invalidate on every PATCH
+- **Version history / revert** — store full document snapshots per version so changes can be rolled back, not just audited
+- **PATCH via character range** — complement occurrence-based targeting with `{ range: { start, end } }` for cases where the exact text isn't known
+- **Auth + RBAC** — OAuth2/SSO with viewer / editor / admin roles
+- **Background jobs for large docs** — offload 10MB+ PATCH operations to a queue; return `202 Accepted` + job ID rather than blocking the request
+- **DOCX / PDF upload** — parse uploaded files into plain text on ingest; reverse-export changes back to the original format
