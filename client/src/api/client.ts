@@ -56,3 +56,19 @@ export const applyChanges = (id: string, changes: ChangeRequest[]) =>
 
 export const getChanges = (id: string) =>
   request<Change[]>(`/api/documents/${id}/changes`);
+
+export type SearchResult = {
+  document_id: string;
+  title: string;
+  snippets: string[];
+};
+
+export const searchDocuments = (q: string, limit = 10, offset = 0) =>
+  request<SearchResult[]>(
+    `/api/documents/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`,
+  );
+
+export const searchDocument = (id: string, q: string) =>
+  request<SearchResult>(
+    `/api/documents/${id}/search?q=${encodeURIComponent(q)}`,
+  );

@@ -25,7 +25,10 @@ export const extractSnippets = (
     if (idx === -1) break;
 
     const start = Math.max(0, idx - contextChars);
-    const end = Math.min(content.length, idx + lowerQuery.length + contextChars);
+    const end = Math.min(
+      content.length,
+      idx + lowerQuery.length + contextChars,
+    );
     const prefix = start > 0 ? "…" : "";
     const suffix = end < content.length ? "…" : "";
 
