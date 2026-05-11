@@ -1,0 +1,126 @@
+# Sandstone — Document Redline API
+# Open in VS Code with the REST Client extension (humao.rest-client)
+# or run the curl equivalents below each request.
+
+@baseUrl = http://localhost:3001
+
+# ─── Documents ────────────────────────────────────────────────────────────────
+
+### List all documents
+# curl http://localhost:3001/api/documents
+GET {{baseUrl}}/api/documents
+
+
+### Get a single document (replace :id with a real ID)
+# curl http://localhost:3001/api/documents/DOCUMENT_ID
+GET {{baseUrl}}/api/documents/DOCUMENT_ID
+
+
+### Create a document
+# curl -X POST http://localhost:3001/api/documents \
+#   -H "Content-Type: application/json" \
+#   -d '{"title":"Test NDA","content":"This Non-Disclosure Agreement is entered into by the Disclosing Party and the Receiving Party."}'
+POST {{baseUrl}}/api/documents
+Content-Type: application/json
+
+{
+  "title": "Test NDA",
+  "content": "This Non-Disclosure Agreement is entered into by the Disclosing Party and the Receiving Party."
+}
+
+
+### Apply a single replacement
+# curl -X PATCH http://localhost:3001/api/documents/DOCUMENT_ID \
+#   -H "Content-Type: application/json" \
+#   -d '{"changes":[{"operation":"replace","target":{"text":"Disclosing Party","occurrence":1},"replacement":"Acme Corp"}]}'
+PATCH {{baseUrl}}/api/documents/DOCUMENT_ID
+Content-Type: application/json
+
+{
+  "changes": [
+    {
+      "operation": "replace",
+      "target": { "text": "Disclosing Party", "occurrence": 1 },
+      "replacement": "Acme Corp"
+    }
+  ]
+}
+
+
+### Apply multiple replacements in one request (atomic — all succeed or all fail)
+# curl -X PATCH http://localhost:3001/api/documents/DOCUMENT_ID \
+#   -H "Content-Type: application/json" \
+#   -d '{"changes":[{"operation":"replace","target":{"text":"Disclosing Party","occurrence":1},"replacement":"Acme Corp"},{"operation":"replace","target":{"text":"Receiving Party","occurrence":1},"replacement":"Beta LLC"}]}'
+PATCH {{baseUrl}}/api/documents/DOCUMENT_ID
+Content-Type: application/json
+
+{
+  "changes": [
+    {
+      "operation": "replace",
+      "target": { "text": "Disclosing Party", "occurrence": 1 },
+      "replacement": "Acme Corp"
+    },
+    {
+      "operation": "replace",
+      "target": { "text": "Receiving Party", "occurrence": 1 },
+      "replacement": "Beta LLC"
+    }
+  ]
+}
+
+
+### Get change history for a document
+# curl http://localhost:3001/api/documents/DOCUMENT_ID/changes
+GET {{baseUrl}}/api/documents/DOCUMENT_ID/changes
+
+
+# ─── Search ───────────────────────────────────────────────────────────────────
+
+### Search across all documents
+# curl "http://localhost:3001/api/documents/search?q=indemnification"
+GET {{baseUrl}}/api/documents/search?q=indemnification
+
+
+### Search with pagination
+# curl "http://localhost:3001/api/documents/search?q=termination&limit=5&offset=0"
+GET {{baseUrl}}/api/documents/search?q=termination&limit=5&offset=0
+
+
+### Search within a single document
+# curl "http://localhost:3001/api/documents/DOCUMENT_ID/search?q=confidential"
+GET {{baseUrl}}/api/documents/DOCUMENT_ID/search?q=confidential
+
+
+# ─── Error cases ──────────────────────────────────────────────────────────────
+
+### 400 — missing title
+POST {{baseUrl}}/api/documents
+Content-Type: application/json
+
+{
+  "content": "No title provided"
+}
+
+
+### 400 — target text not found
+PATCH {{baseUrl}}/api/documents/DOCUMENT_ID
+Content-Type: application/json
+
+{
+  "changes": [
+    {
+      "operation": "replace",
+      "target": { "text": "this text does not exist", "occurrence": 1 },
+      "replacement": "anything"
+    }
+  ]
+}
+
+
+### 400 — empty search query
+GET {{baseUrl}}/api/documents/search?q=
+
+
+### 404 — document not found
+GET {{baseUrl}}/api/documents/nonexistent-id
