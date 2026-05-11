@@ -146,3 +146,12 @@
   border-color: var(--accent);
   color: var(--accent);
 }
+.occurrenceHint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.occurrenceWarn {
+  font-size: 11px;
+  color: #ef4444;
+}

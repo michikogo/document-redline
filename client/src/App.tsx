@@ -20,6 +20,7 @@ const App = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTarget, setDrawerTarget] = useState<string | undefined>();
   const [drawerKey, setDrawerKey] = useState(0);
+  const [selectedDocContent, setSelectedDocContent] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(
     null,
   );
@@ -28,6 +29,7 @@ const App = () => {
   const handleSelect = (id: string) => {
     setSelectedId(id);
     setUpdatedDoc(undefined);
+    setSelectedDocContent("");
     setDrawerOpen(false);
     setSearchResults(null);
     setSearchQuery("");
@@ -100,6 +102,7 @@ const App = () => {
               documentId={selectedId}
               overrideDoc={updatedDoc}
               onOpenDrawer={handleOpenDrawer}
+              onDocLoaded={(doc) => setSelectedDocContent(doc.content)}
             />
             <ChangeLog documentId={selectedId} refreshKey={changeLogKey} />
           </>
@@ -112,6 +115,7 @@ const App = () => {
           <ChangeForm
             key={drawerKey}
             documentId={selectedId}
+            documentContent={selectedDocContent}
             initialTarget={drawerTarget}
             onSuccess={handleChangeSuccess}
           />
