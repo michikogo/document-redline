@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { getDocuments, DocumentSummary } from "../api/client";
+import { getDocuments } from "../api/client";
+import type { DocumentSummary } from "../api/client";
 
 type Props = {
   selectedId: string | null;

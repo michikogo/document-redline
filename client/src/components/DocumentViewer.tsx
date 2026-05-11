@@ -1,5 +1,6 @@
 import React, { useEffect, useReducer } from "react";
-import { getDocument, Document } from "../api/client";
+import { getDocument } from "../api/client";
+import type { Document } from "../api/client";
 
 type State =
   | { status: "loading" }
@@ -11,10 +12,9 @@ type Props = {
 };
 
 const DocumentViewer = ({ documentId }: Props) => {
-  const [state, dispatch] = useReducer(
-    (_prev: State, next: State) => next,
-    { status: "loading" },
-  );
+  const [state, dispatch] = useReducer((_prev: State, next: State) => next, {
+    status: "loading",
+  });
 
   useEffect(() => {
     dispatch({ status: "loading" });
