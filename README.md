@@ -2,8 +2,6 @@
 
 A document redlining service — REST API + React UI for making targeted text changes to contracts and searching across document content.
 
-Built as a take-home project for Sandstone.
-
 ---
 
 ## Stack
@@ -52,20 +50,20 @@ All request and response bodies are JSON. See [`requests.http`](./requests.http)
 
 ### Documents
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/documents` | List all documents (id, title, version, updated_at) |
-| `GET` | `/api/documents/:id` | Get a single document with full content |
-| `POST` | `/api/documents` | Create a document |
-| `PATCH` | `/api/documents/:id` | Apply one or more text replacements |
-| `GET` | `/api/documents/:id/changes` | List the change history for a document |
+| Method  | Path                         | Description                                         |
+| ------- | ---------------------------- | --------------------------------------------------- |
+| `GET`   | `/api/documents`             | List all documents (id, title, version, updated_at) |
+| `GET`   | `/api/documents/:id`         | Get a single document with full content             |
+| `POST`  | `/api/documents`             | Create a document                                   |
+| `PATCH` | `/api/documents/:id`         | Apply one or more text replacements                 |
+| `GET`   | `/api/documents/:id/changes` | List the change history for a document              |
 
 ### Search
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/documents/search?q=` | Search across all documents |
-| `GET` | `/api/documents/:id/search?q=` | Search within a single document |
+| Method | Path                           | Description                     |
+| ------ | ------------------------------ | ------------------------------- |
+| `GET`  | `/api/documents/search?q=`     | Search across all documents     |
+| `GET`  | `/api/documents/:id/search?q=` | Search within a single document |
 
 ---
 
