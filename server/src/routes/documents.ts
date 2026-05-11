@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import db, { sqlite } from "../db.ts";
 import { documents, changes } from "../schema.ts";
 import { AppError } from "../middleware/errorHandler.ts";
@@ -42,14 +42,17 @@ router.post("/", (req: Request, res: Response, next: NextFunction) => {
   const id = crypto.randomUUID();
 
   db.insert(documents)
-    .values({ id, title, content, version: 1, created_at: now, updated_at: now })
+    .values({
+      id,
+      title,
+      content,
+      version: 1,
+      created_at: now,
+      updated_at: now,
+    })
     .run();
 
-  const doc = db
-    .select()
-    .from(documents)
-    .where(eq(documents.id, id))
-    .get();
+  const doc = db.select().from(documents).where(eq(documents.id, id)).get();
 
   res.status(201).json(doc);
 });
@@ -81,7 +84,10 @@ router.patch("/:id", (req: Request, res: Response, next: NextFunction) => {
       typeof target.occurrence !== "number"
     )
       return next(
-        new AppError(400, "each change must have target.text and target.occurrence"),
+        new AppError(
+          400,
+          "each change must have target.text and target.occurrence",
+        ),
       );
     if (typeof change.replacement !== "string")
       return next(new AppError(400, "replacement must be a string"));
@@ -144,7 +150,7 @@ router.get(
       .select()
       .from(changes)
       .where(eq(changes.document_id, req.params.id))
-      .orderBy(changes.applied_at)
+      .orderBy(desc(changes.applied_at))
       .all();
 
     res.json(log);
