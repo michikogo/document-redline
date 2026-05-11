@@ -48,6 +48,7 @@ See [`requests.http`](./requests.http) for runnable examples in VS Code (REST Cl
 ### Typical workflow
 
 **1. Create a document**
+
 ```bash
 curl -X POST http://localhost:3001/api/documents \
   -H "Content-Type: application/json" \
@@ -56,12 +57,14 @@ curl -X POST http://localhost:3001/api/documents \
 ```
 
 **2. Search for a clause**
+
 ```bash
 curl "http://localhost:3001/api/documents/search?q=Disclosing+Party"
 # returns: [{ "document_id": "abc-123", "title": "NDA", "snippets": ["...Disclosing Party and the Receiving..."] }]
 ```
 
 **3. Apply a targeted replacement**
+
 ```bash
 curl -X PATCH http://localhost:3001/api/documents/abc-123 \
   -H "Content-Type: application/json" \
@@ -76,6 +79,7 @@ curl -X PATCH http://localhost:3001/api/documents/abc-123 \
 ```
 
 **4. Review the change log**
+
 ```bash
 curl http://localhost:3001/api/documents/abc-123/changes
 # returns: [{ "target_text": "Disclosing Party", "replacement": "Acme Corp", "applied_at": "..." }]
@@ -87,34 +91,34 @@ curl http://localhost:3001/api/documents/abc-123/changes
 
 Base URL: `http://localhost:3001`
 
-All request and response bodies are JSON. See [`requests.http`](./requests.http) for runnable examples (VS Code REST Client).
+All request and response bodies are JSON. See [`requests.http`](./docs/requests.http) for runnable examples (VS Code REST Client).
 
 ### Error responses
 
 All errors return JSON: `{ "error": "...", "code": 404 }`
 
-| Status | When |
-|--------|------|
-| `400` | Missing/invalid fields, target text not found, empty search query |
-| `404` | Document ID not found |
-| `500` | Unexpected server error |
+| Status | When                                                              |
+| ------ | ----------------------------------------------------------------- |
+| `400`  | Missing/invalid fields, target text not found, empty search query |
+| `404`  | Document ID not found                                             |
+| `500`  | Unexpected server error                                           |
 
 ### Documents
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/documents` | List all documents (id, title, version, updated_at) |
-| `GET` | `/api/documents/:id` | Get a single document with full content |
-| `POST` | `/api/documents` | Create a document |
-| `PATCH` | `/api/documents/:id` | Apply one or more text replacements |
-| `GET` | `/api/documents/:id/changes` | List the change history for a document |
+| Method  | Path                         | Description                                         |
+| ------- | ---------------------------- | --------------------------------------------------- |
+| `GET`   | `/api/documents`             | List all documents (id, title, version, updated_at) |
+| `GET`   | `/api/documents/:id`         | Get a single document with full content             |
+| `POST`  | `/api/documents`             | Create a document                                   |
+| `PATCH` | `/api/documents/:id`         | Apply one or more text replacements                 |
+| `GET`   | `/api/documents/:id/changes` | List the change history for a document              |
 
 ### Search
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/documents/search?q=` | Search across all documents |
-| `GET` | `/api/documents/:id/search?q=` | Search within a single document |
+| Method | Path                           | Description                     |
+| ------ | ------------------------------ | ------------------------------- |
+| `GET`  | `/api/documents/search?q=`     | Search across all documents     |
+| `GET`  | `/api/documents/:id/search?q=` | Search within a single document |
 
 ---
 
@@ -206,26 +210,31 @@ For production, the natural next steps are SQLite FTS5 or an in-memory inverted 
 ## Trade-offs
 
 ### SQLite over PostgreSQL
+
 **Purpose:** Zero-setup local development — one file, no server process, no connection string.  
 **Benefit:** Anyone can clone and run without installing a database.  
 **Trade-off:** Serialises all writes, so concurrent editors queue up rather than write in parallel. PostgreSQL is the natural migration path when that matters.
 
 ### Append-only change log over snapshots
+
 **Purpose:** Record every edit with its target text, occurrence, replacement, and timestamp.  
 **Benefit:** Full audit trail with minimal storage — only what changed is stored, not full document copies.  
 **Trade-off:** Reverting a change requires replaying the log in reverse. Snapshots make revert trivial but storage grows with every edit.
 
 ### Version number over ETag
+
 **Purpose:** Give clients a way to detect if a document has changed since they last fetched it.  
 **Benefit:** Simple integer that increments on every PATCH — easy to check and display in the UI.  
 **Trade-off:** Doesn't enforce anything — two editors can still overwrite each other silently. ETag + `If-Match` on PATCH would prevent that.
 
 ### Document content stored in SQLite over external storage
+
 **Purpose:** Keep the stack simple — one database for both metadata and content.  
 **Benefit:** No external dependencies; content is transactional with document metadata.  
 **Trade-off:** Large documents bloat the database and slow backups. Production path is blob storage (e.g. S3) with a key reference in the DB.
 
 ### Synchronous PATCH over background jobs
+
 **Purpose:** Apply changes and return the updated document in a single request.  
 **Benefit:** Simple client experience — no polling or webhooks needed.  
 **Trade-off:** A large document with many replacements holds the HTTP connection open. Production path is a job queue returning `202 Accepted` + a job ID.
